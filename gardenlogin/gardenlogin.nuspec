@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>gardenlogin</id>
+    <version>1.0.9</version>
+    <packageSourceUrl>https://github.com/gardener/chocolatey-packages/gardenlogin</packageSourceUrl>
+    <title>gardenlogin (Install)</title>
+    <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
+    <projectUrl>https://gardener.cloud</projectUrl>
+    <iconUrl>https://github.com/gardener/gardener/blob/master/logo/gardener-large.png</iconUrl>
+    <copyright>2021 SAP SE</copyright>
+    <licenseUrl>https://github.com/gardener/gardenlogin/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/gardener/gardenlogin</projectSourceUrl>
+    <tags>gardenlogin</tags>
+    <summary>gardenlogins get-client-certificate command can be used as a kubectl credential plugin</summary>
+    <description>
+      `gardenlogin`s `get-client-certificate` command can be used as a `kubectl` [credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). It fetches the `cluster-admin` credentials from the API introduced with [GEP-16](https://github.com/gardener/gardener/blob/master/docs/proposals/16-adminkubeconfig-subresource.md). See more details under [Authentication Flow](#authentication-flow) 
+      With GEP-16, users are able to generate kubeconfigs for `Shoot` clusters with short-lived certificates, to access the cluster as `cluster-admin`.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
