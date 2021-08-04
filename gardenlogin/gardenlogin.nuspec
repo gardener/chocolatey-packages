@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>gardenlogin</id>
-    <version>1.0.9</version>
+    <version>0.0.0</version>
     <packageSourceUrl>https://github.com/gardener/chocolatey-packages/gardenlogin</packageSourceUrl>
     <title>gardenlogin (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
