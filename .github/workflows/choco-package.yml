@@ -1,0 +1,31 @@
+name: Remote Dispatch Action
+on: [repository_dispatch]
+jobs:
+  package-gardenlogin:
+    if: github.event.client_payload.component == 'gardenlogin'
+    runs-on: windows-latest
+    steps:
+      - name: Event Information
+        run: |
+          echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
+          echo "Windows gardenlogin binary hash '${{ github.event.client_payload.windows_sha }}'"
+      - uses: actions/checkout@v2.1.1
+      - name: Update files
+        run: |
+          echo "${{ github.event.client_payload.windows_sha }}" > "gardenlogin/tools/checksum64.txt"
+      - name: Choco pack
+        uses: crazy-max/ghaction-chocolatey@d025252287b66c3fb7d795cc8932dec97630cd53 # pin@v1.5
+        with:
+          args: pack gardenlogin\gardenlogin.nuspec --version=${{ github.event.client_payload.tag }} -y --outdir gardenlogin
+      - name: Commit files
+        run: |
+          git config --local user.email "gardener.ci.user@gmail.com"
+          git config --local user.name "gardener-robot-ci-1"
+          git add "gardenlogin/gardenlogin.${{ github.event.client_payload.tag }}.nupkg"
+          git add gardenlogin/tools/checksum64.txt
+          git commit -m "Update gardenlogin"
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: false
