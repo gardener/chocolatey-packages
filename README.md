@@ -5,7 +5,7 @@ Provides tools from `github.com/gardener` via [Chocolatey](http://https://chocol
 To install a package:
 
 ```ps
-$ choco install <package_name>
+$ choco install package_name
 ```
 
 ## Development
