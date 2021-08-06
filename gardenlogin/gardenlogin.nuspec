@@ -1,4 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+﻿<!--
+SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
+<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>gardenlogin</id>
@@ -15,6 +21,7 @@
     <tags>gardenlogin</tags>
     <summary>gardenlogins get-client-certificate command can be used as a kubectl credential plugin</summary>
     <description>
+      This tool allows users of Shoot clusters operated by [Gardener](https://gardener.cloud/) to access their clusters as cluster-admin using dynamically generated short-living credentials.
       `gardenlogin`s `get-client-certificate` command can be used as a `kubectl` [credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins). It fetches the `cluster-admin` credentials from the API introduced with [GEP-16](https://github.com/gardener/gardener/blob/master/docs/proposals/16-adminkubeconfig-subresource.md). See more details under [Authentication Flow](#authentication-flow) 
       With GEP-16, users are able to generate kubeconfigs for `Shoot` clusters with short-lived certificates, to access the cluster as `cluster-admin`.
     </description>
