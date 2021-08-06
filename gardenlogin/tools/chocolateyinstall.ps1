@@ -3,15 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 $ErrorActionPreference = 'Stop'
-$url64      = "https://github.com/gardener/gardenlogin/releases/download/$env:chocolateyPackageVersion/gardenlogin_windows_amd64.exe"
+$url64      = "https://github.com/gardener/gardenlogin/releases/download/0.0.0/gardenlogin_windows_amd64.exe"
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$checksum64 = Get-Content "$toolsDir\checksum64.txt" -First 1
 
 $packageArgs = @{
   PackageName     = $env:ChocolateyPackageName
   Url64bit        = $url64
   ChecksumType64  = 'sha256'
-  Checksum64      = $checksum64
+  Checksum64      = ""
   FileFullPath    = "$toolsDir\gardenlogin.exe"
 }
 
