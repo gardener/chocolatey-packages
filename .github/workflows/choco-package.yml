@@ -1,7 +1,7 @@
 name: Remote Dispatch Action
 on: [repository_dispatch]
 jobs:
-  update-gardenlogin:
+  package-gardenlogin:
     if: github.event.client_payload.component == 'gardenlogin'
     runs-on: windows-latest
     steps:
