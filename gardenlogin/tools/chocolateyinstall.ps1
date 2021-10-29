@@ -15,3 +15,5 @@ $packageArgs = @{
 }
 
 Get-ChocolateyWebFile @packageArgs
+
+Install-BinFile -Name "kubectl-gardenlogin" -Path "$toolsDir\gardenlogin.exe"
