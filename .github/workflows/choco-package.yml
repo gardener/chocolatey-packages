@@ -9,7 +9,7 @@ jobs:
         run: |
           echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
           echo "Windows gardenlogin binary hash '${{ github.event.client_payload.windows_sha }}'"
-      - uses: actions/checkout@v2.1.1
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
       - name: Update package source files
         run: .github\workflows\update-gardenlogin.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }} 
       - name: Choco pack
@@ -28,7 +28,7 @@ jobs:
           git add "gardenlogin\tools\chocolateyinstall.ps1"
           git commit -m "Update gardenlogin"
       - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6 # pin@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           force: false
@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
           echo "Windows gardenctl-v2 binary hash '${{ github.event.client_payload.windows_sha }}'"
-      - uses: actions/checkout@v2.1.1
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
       - name: Update package source files
         run: .github\workflows\update-gardenctl-v2.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }} 
       - name: Choco pack
@@ -59,7 +59,7 @@ jobs:
           git add "gardenctl-v2\tools\chocolateyinstall.ps1"
           git commit -m "Update gardenctl-v2"
       - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6 # pin@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           force: false
