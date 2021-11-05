@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>gardenctl-v2</id>
+    <version>0.0.0</version>
+    <packageSourceUrl>https://github.com/gardener/chocolatey-packages/tree/master/gardenctl-v2</packageSourceUrl>
+    <title>gardenctl-v2 (Install)</title>
+    <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
+    <projectUrl>https://gardener.cloud</projectUrl>
+    <iconUrl>https://github.com/gardener/gardener/blob/master/logo/gardener-large.png</iconUrl>
+    <copyright>2021 SAP SE</copyright>
+    <licenseUrl>https://github.com/gardener/gardenctl-v2/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/gardener/gardenctl-v2</projectSourceUrl>
+    <tags>gardenctl-v2</tags>
+    <summary>gardenctl-v2 ist the revision of gardenctl, Gardener's command-line client</summary>
+    <description>
+      `gardenctl` is a command-line client for administrative purposes for the Gardener.
+      It facilitates the administration of one or many garden, seed and shoot clusters, e.g. to check for issues which occured in one of these clusters.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
