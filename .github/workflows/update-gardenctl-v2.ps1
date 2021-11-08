@@ -10,7 +10,7 @@ Param(
 
 @"	
 `$ErrorActionPreference = 'Stop'
-`$url64      = "https://github.com/gardener/gardenlogin/releases/download/$version/gardenlogin_windows_amd64.exe"
+`$url64      = "https://github.com/gardener/gardenctl-v2/releases/download/$version/gardenctl_v2_windows_amd64.exe"
 `$toolsDir   = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
 
 `$packageArgs = @{
@@ -18,7 +18,7 @@ Param(
   Url64bit        = `$url64
   ChecksumType64  = 'sha256'
   Checksum64      = "$checksum64"
-  FileFullPath    = "`$toolsDir\gardenlogin.exe"
+  FileFullPath    = "`$toolsDir\gardenctl-v2.exe"
 }
 Get-ChocolateyWebFile @packageArgs
-"@ > gardenlogin\tools\chocolateyinstall.ps1
+"@ > gardenctl-v2\tools\chocolateyinstall.ps1
