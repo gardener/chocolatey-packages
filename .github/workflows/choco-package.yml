@@ -12,7 +12,7 @@ jobs:
       - name: Get Version
         id: get_version
         run: |
-          $version="'${{ github.event.client_payload.tag }}'"
+          $version="${{ github.event.client_payload.tag }}"
           $version=$version.replace('v','')
           echo "::set-output name=version::$version"
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
@@ -49,7 +49,7 @@ jobs:
       - name: Get Version
         id: get_version
         run: |
-          $version="'${{ github.event.client_payload.tag }}'"
+          $version="${{ github.event.client_payload.tag }}"
           $version=$version.replace('v','')
           echo "::set-output name=version::$version"
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
