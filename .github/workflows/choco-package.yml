@@ -25,7 +25,7 @@ jobs:
       - name: Choco push
         uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
         with:
-          args: push "gardenlogin\gardenlogin.${{ steps.get_version.outputs.version }}.nupkg" --source https://chocolatey.org -k secrets.CHOCOLATEY_API_KEY
+          args: push "gardenlogin\gardenlogin.${{ steps.get_version.outputs.version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
       - name: Commit files
         run: |
           git config --local user.email "gardener.ci.user@gmail.com"
@@ -62,7 +62,7 @@ jobs:
       - name: Choco push
         uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
         with:
-          args: push "gardenctl-v2\gardenctl-v2.${{ steps.get_version.outputs.version }}.nupkg" --source https://chocolatey.org -k secrets.CHOCOLATEY_API_KEY
+          args: push "gardenctl-v2\gardenctl-v2.${{ steps.get_version.outputs.version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
       - name: Commit files
         run: |
           git config --local user.email "gardener.ci.user@gmail.com"
