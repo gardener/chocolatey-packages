@@ -21,4 +21,11 @@ Param(
   FileFullPath    = "`$toolsDir\gardenlogin.exe"
 }
 Get-ChocolateyWebFile @packageArgs
+Install-BinFile -Name "kubectl-gardenlogin" -Path "`$toolsDir\gardenlogin.exe"
+
 "@ > gardenlogin\tools\chocolateyinstall.ps1
+
+@"	
+Uninstall-BinFile -Name "kubectl-gardenlogin"
+"@ > gardenlogin\tools\chocolateyuninstall.ps1
+
