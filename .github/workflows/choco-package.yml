@@ -9,7 +9,7 @@ jobs:
           - name: Event Information
             run: |
               echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
-              echo "Windows gardenlogin binary hash '${{ github.event.client_payload.windows_sha }}'"
+              echo "Windows binary hash '${{ github.event.client_payload.windows_sha }}'"
           - name: Get Version
             id: get_version
             run: |
