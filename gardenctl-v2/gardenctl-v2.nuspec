@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
   <metadata>
     <id>gardenctl-v2</id>
     <version>0.0.0</version>
+    <releaseNotes>https://github.com/gardener/gardenctl-v2/releases</releaseNotes>
     <packageSourceUrl>https://github.com/gardener/chocolatey-packages/tree/master/gardenctl-v2</packageSourceUrl>
     <title>gardenctl-v2 (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
