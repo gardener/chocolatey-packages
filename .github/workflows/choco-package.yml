@@ -38,6 +38,7 @@ jobs:
           git config --local user.name "gardener-robot-ci-1"
           git add "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.version }}.nupkg"
           git add "gardenlogin\tools\chocolateyinstall.ps1"
+          git add "gardenlogin\tools\chocolateyuninstall.ps1"
           git commit -m "Update gardenlogin"
       - name: Push changes
         uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6 # pin@v0.6.0
