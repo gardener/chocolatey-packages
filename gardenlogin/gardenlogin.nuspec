@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
   <metadata>
     <id>gardenlogin</id>
     <version>0.0.0</version>
+    <releaseNotes>https://github.com/gardener/gardenlogin/releases</releaseNotes>
     <packageSourceUrl>https://github.com/gardener/chocolatey-packages/tree/master/gardenlogin</packageSourceUrl>
     <title>gardenlogin (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
