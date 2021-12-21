@@ -13,7 +13,7 @@ SPDX-License-Identifier: Apache-2.0
     <title>gardenlogin (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
     <projectUrl>https://gardener.cloud</projectUrl>
-    <iconUrl>https://github.com/gardener/gardener/blob/master/logo/gardener-large.png</iconUrl>
+    <iconUrl>https://cdn.statically.io/gh/gardener/gardener/v1.38.0/logo/gardener-large.png</iconUrl>
     <copyright>2021 SAP SE</copyright>
     <licenseUrl>https://github.com/gardener/gardenlogin/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
