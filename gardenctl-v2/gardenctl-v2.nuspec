@@ -13,7 +13,7 @@ SPDX-License-Identifier: Apache-2.0
     <title>gardenctl-v2 (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
     <projectUrl>https://gardener.cloud</projectUrl>
-    <iconUrl>https://cdn.statically.io/gh/gardener/gardenctl-v2/v0.1.0/logo/logo_gardener_cli_large.png</iconUrl>
+    <iconUrl>https://cdn.statically.io/gh/gardener/gardenctl-v2/v2.0.0/logo/logo_gardener_cli_large.png</iconUrl>
     <copyright>2021 SAP SE</copyright>
     <licenseUrl>https://github.com/gardener/gardenctl-v2/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
