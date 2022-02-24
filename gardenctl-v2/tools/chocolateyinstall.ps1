@@ -7,6 +7,6 @@ $packageArgs = @{
   Url64bit        = $url64
   ChecksumType64  = 'sha256'
   Checksum64      = "e94639f849b4e4678b80af0b8b86fa208f20dd0556302eae9e9cc704ba5884c2"
-  FileFullPath    = "$toolsDir\gardenctl-v2.exe"
+  FileFullPath    = "$toolsDir\gardenctl.exe"
 }
 Get-ChocolateyWebFile @packageArgs
