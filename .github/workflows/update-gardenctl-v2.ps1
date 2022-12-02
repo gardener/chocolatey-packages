@@ -18,7 +18,7 @@ Param(
   Url64bit        = `$url64
   ChecksumType64  = 'sha256'
   Checksum64      = "$checksum64"
-  FileFullPath    = "`$toolsDir\gardenctl-v2.exe"
+  FileFullPath    = "`$toolsDir\gardenctl.exe"
 }
 Get-ChocolateyWebFile @packageArgs
 "@ > gardenctl-v2\tools\chocolateyinstall.ps1
