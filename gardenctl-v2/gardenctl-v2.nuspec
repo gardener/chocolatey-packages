@@ -24,6 +24,9 @@ SPDX-License-Identifier: Apache-2.0
       `gardenctl` is a command-line client for administrative purposes for the Gardener.
       It facilitates the administration of one or many garden, seed and shoot clusters, e.g. to check for issues which occured in one of these clusters.
     </description>
+    <dependencies>
+      <dependency id="gardenlogin"/>
+    </dependencies>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
