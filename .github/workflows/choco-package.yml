@@ -2,46 +2,47 @@ name: Remote Dispatch Action
 on: [repository_dispatch]
 jobs:
   package-push-common:
-      runs-on: windows-latest
-      outputs:
-        version: ${{ steps.get_version.outputs.version }}
-      steps:
-          - name: Event Information
-            run: |
-              echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
-              echo "Windows binary hash '${{ github.event.client_payload.windows_sha }}'"
-          - name: Get Version
-            id: get_version
-            run: |
-              $version="${{ github.event.client_payload.tag }}"
-              $version=$version.replace('v','')
-              echo "::set-output name=version::$version"
+    runs-on: windows-latest
+    outputs:
+      cleaned_version: ${{ steps.get_version.outputs.cleaned_version }}
+    steps:
+      - name: Event Information
+        id: event_info
+        run: |
+          echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
+          echo "Windows binary hash '${{ github.event.client_payload.windows_sha }}'"
+      - name: Get Version
+        id: get_version
+        run: |
+          $version="${{ github.event.client_payload.tag }}"
+          $cleaned_version=$version.replace('v','')
+          echo "cleaned_version=$cleaned_version" >> $env:GITHUB_OUTPUT
   package-push-gardenlogin:
     if: github.event.client_payload.component == 'gardenlogin'
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3.3.0
       - name: Update package source files
         run: .github\workflows\update-gardenlogin.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }} 
       - name: Choco pack
-        uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
+        uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
-          args: pack gardenlogin\gardenlogin.nuspec --version=${{ needs.package-push-common.outputs.version }} -y --outdir gardenlogin
+          args: pack gardenlogin\gardenlogin.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir gardenlogin
       - name: Choco push
-        uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
+        uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
-          args: push "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
+          args: push "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
       - name: Commit files
         run: |
           git config --local user.email "gardener.ci.user@gmail.com"
           git config --local user.name "gardener-robot-ci-1"
-          git add "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.version }}.nupkg"
+          git add "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg"
           git add "gardenlogin\tools\chocolateyinstall.ps1"
           git add "gardenlogin\tools\chocolateyuninstall.ps1"
           git commit -m "Update gardenlogin"
       - name: Push changes
-        uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6 # pin@v0.6.0
+        uses: ad-m/github-push-action@0fafdd62b84042d49ec0cb92d9cac7f7ce4ec79e # pin@master Dec 12, 2022
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           force: false
@@ -50,26 +51,26 @@ jobs:
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2.4.0
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3.3.0
       - name: Update package source files
         run: .github\workflows\update-gardenctl-v2.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }} 
       - name: Choco pack
-        uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
+        uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
-          args: pack gardenctl-v2\gardenctl-v2.nuspec --version=${{ needs.package-push-common.outputs.version }} -y --outdir gardenctl-v2
+          args: pack gardenctl-v2\gardenctl-v2.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir gardenctl-v2
       - name: Choco push
-        uses: crazy-max/ghaction-chocolatey@87d06bbbd2cfb1835f1820042d356aef4875fb5f # pin@v1.6
+        uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
-          args: push "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
+          args: push "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
       - name: Commit files
         run: |
           git config --local user.email "gardener.ci.user@gmail.com"
           git config --local user.name "gardener-robot-ci-1"
-          git add "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.version }}.nupkg"
+          git add "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg"
           git add "gardenctl-v2\tools\chocolateyinstall.ps1"
           git commit -m "Update gardenctl-v2"
       - name: Push changes
-        uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6 # pin@v0.6.0
+        uses: ad-m/github-push-action@0fafdd62b84042d49ec0cb92d9cac7f7ce4ec79e # pin@master Dec 12, 2022
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           force: false
