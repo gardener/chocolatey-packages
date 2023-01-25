@@ -33,19 +33,14 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
           args: push "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
-      - name: Commit files
-        run: |
-          git config --local user.email "gardener.ci.user@gmail.com"
-          git config --local user.name "gardener-robot-ci-1"
-          git add "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg"
-          git add "gardenlogin\tools\chocolateyinstall.ps1"
-          git add "gardenlogin\tools\chocolateyuninstall.ps1"
-          git commit -m "Update gardenlogin"
-      - name: Push changes
-        uses: ad-m/github-push-action@0fafdd62b84042d49ec0cb92d9cac7f7ce4ec79e # pin@master Dec 12, 2022
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # pin@v4.2.3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          force: false
+          add-paths: gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenlogin\tools\chocolateyinstall.ps1,gardenlogin\tools\chocolateyuninstall.ps1
+          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
+          delete-branch: true
+          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
+          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
   package-push-gardenctl-v2:
     if: github.event.client_payload.component == 'gardenctl-v2'
     runs-on: windows-latest
@@ -62,15 +57,11 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@90deb87d9fbf0bb2f022b91e3bf11b4441cddda5 # pin@v2.1.0
         with:
           args: push "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
-      - name: Commit files
-        run: |
-          git config --local user.email "gardener.ci.user@gmail.com"
-          git config --local user.name "gardener-robot-ci-1"
-          git add "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg"
-          git add "gardenctl-v2\tools\chocolateyinstall.ps1"
-          git commit -m "Update gardenctl-v2"
-      - name: Push changes
-        uses: ad-m/github-push-action@0fafdd62b84042d49ec0cb92d9cac7f7ce4ec79e # pin@master Dec 12, 2022
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # pin@v4.2.3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          force: false
+          add-paths: gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenctl-v2\tools\chocolateyinstall.ps1
+          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
+          delete-branch: true
+          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
+          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
