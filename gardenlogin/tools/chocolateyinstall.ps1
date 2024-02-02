@@ -1,12 +1,12 @@
 $ErrorActionPreference = 'Stop'
-$url64      = "https://github.com/gardener/gardenlogin/releases/download/v0.4.0/gardenlogin_windows_amd64.exe"
+$url64      = "https://github.com/gardener/gardenlogin/releases/download/v0.5.0/gardenlogin_windows_amd64.exe"
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 $packageArgs = @{
   PackageName     = $env:ChocolateyPackageName
   Url64bit        = $url64
   ChecksumType64  = 'sha256'
-  Checksum64      = "ee3a0399d8e0b4b91e31f94e33571e6a3f115e85e448214de6fe24cec9ab6391"
+  Checksum64      = "8444216da3ce8a27cf78769c90d3692f62ca74928ebcce60fa7309cb653997b3"
   FileFullPath    = "$toolsDir\gardenlogin.exe"
 }
 Get-ChocolateyWebFile @packageArgs
