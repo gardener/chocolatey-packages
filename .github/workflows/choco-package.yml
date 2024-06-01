@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # pin@v4.1.4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # pin@v4.1.6
       - name: Update package source files
         run: .github\workflows\update-gardenlogin.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
       - name: Choco pack
@@ -50,7 +50,7 @@ jobs:
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # pin@v4.1.4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # pin@v4.1.6
       - name: Update package source files
         run: .github\workflows\update-gardenctl-v2.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
       - name: Choco pack
