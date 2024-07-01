@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # pin@v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # pin@v4.1.7
       - name: Update package source files
         run: .github\workflows\update-gardenlogin.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
       - name: Choco pack
@@ -38,7 +38,7 @@ jobs:
         if: ${{ vars.SKIP_CHOCO_PUSH_GARDENLOGIN == 'true' }}
         run: echo "Choco push step was skipped for package-push-gardenlogin."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # pin@v6.0.5
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # pin@v6.1.0
         with:
           add-paths: gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenlogin\tools\chocolateyinstall.ps1,gardenlogin\tools\chocolateyuninstall.ps1
           branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
@@ -50,7 +50,7 @@ jobs:
     runs-on: windows-latest
     needs: package-push-common
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # pin@v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # pin@v4.1.7
       - name: Update package source files
         run: .github\workflows\update-gardenctl-v2.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
       - name: Choco pack
@@ -66,7 +66,7 @@ jobs:
         if: ${{ vars.SKIP_CHOCO_PUSH_GARDENCTL_V2 == 'true' }}
         run: echo "Choco push step was skipped for package-push-gardenctl-v2."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # pin@v6.0.5
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # pin@v6.1.0
         with:
           add-paths: gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenctl-v2\tools\chocolateyinstall.ps1
           branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
