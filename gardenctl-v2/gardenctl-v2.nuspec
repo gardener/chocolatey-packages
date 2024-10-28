@@ -19,10 +19,15 @@ SPDX-License-Identifier: Apache-2.0
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/gardener/gardenctl-v2</projectSourceUrl>
     <tags>gardenctl-v2</tags>
-    <summary>gardenctl-v2 ist the revision of gardenctl, Gardener's command-line client</summary>
+    <summary>gardenctl-v2 is the revision of gardenctl, Gardener's command-line client</summary>
     <description>
-      `gardenctl` is a command-line client for administrative purposes for the Gardener.
-      It facilitates the administration of one or many garden, seed and shoot clusters, e.g. to check for issues which occured in one of these clusters.
+      gardenctl is a command-line client for administrative purposes for the Gardener.
+      It facilitates the administration of one or many garden, seed and shoot clusters.
+
+      HINT: Consider adding the gardenctl startup script to your shell profile.
+      It contains various tweaks, such as setting environment variables,
+      loading completions, and adding some helpful aliases or functions.
+      Run `gardenctl rc --help` for more information.
     </description>
     <dependencies>
       <dependency id="gardenlogin"/>
