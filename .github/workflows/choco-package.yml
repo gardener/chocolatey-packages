@@ -38,7 +38,7 @@ jobs:
         if: ${{ vars.SKIP_CHOCO_PUSH_GARDENLOGIN == 'true' }}
         run: echo "Choco push step was skipped for package-push-gardenlogin."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # pin@v7.0.5
+        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # pin@v7.0.6
         with:
           add-paths: gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenlogin\tools\chocolateyinstall.ps1,gardenlogin\tools\chocolateyuninstall.ps1
           branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
@@ -66,7 +66,7 @@ jobs:
         if: ${{ vars.SKIP_CHOCO_PUSH_GARDENCTL_V2 == 'true' }}
         run: echo "Choco push step was skipped for package-push-gardenctl-v2."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # pin@v7.0.5
+        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # pin@v7.0.6
         with:
           add-paths: gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenctl-v2\tools\chocolateyinstall.ps1
           branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
