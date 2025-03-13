@@ -73,3 +73,31 @@ jobs:
           delete-branch: true
           title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
           body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
+  package-push-diki:
+    if: github.event.client_payload.component == 'diki'
+    runs-on: windows-latest
+    needs: package-push-common
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+      - name: Update package source files
+        run: .github\workflows\update-diki.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
+      - name: Choco pack
+        uses: crazy-max/ghaction-chocolatey@2ae99523e93879734d432250f87e2c45c379cd60 # pin@v3.2.0
+        with:
+          args: pack diki\diki.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir diki
+      - name: Choco push
+        if: ${{ vars.SKIP_CHOCO_PUSH_DIKI != 'true' }}
+        uses: crazy-max/ghaction-chocolatey@2ae99523e93879734d432250f87e2c45c379cd60 # pin@v3.2.0
+        with:
+          args: push "diki\diki.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
+      - name: Choco push - print skip info
+        if: ${{ vars.SKIP_CHOCO_PUSH_DIKI == 'true' }}
+        run: echo "Choco push step was skipped for package-push-diki."
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # pin@v7.0.6
+        with:
+          add-paths: diki\diki.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,diki\tools\chocolateyinstall.ps1
+          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
+          delete-branch: true
+          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
+          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <!--
+ SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+ 
+ SPDX-License-Identifier: Apache-2.0
+ -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>diki</id>
+    <version>0.0.0</version>
+    <packageSourceUrl>https://github.com/gardener/chocolatey-packages/tree/master/diki</packageSourceUrl>
+    <title>diki (Install)</title>
+    <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
+    <projectUrl>https://gardener.cloud</projectUrl>
+    <iconUrl>https://github.com/gardener/gardener/blob/master/logo/gardener-large.png</iconUrl>
+    <copyright>2025 SAP SE</copyright>
+    <licenseUrl>https://github.com/gardener/diki/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/gardener/diki</projectSourceUrl>
+    <tags>diki</tags>
+    <summary>diki is a compliance checker that aims to enhance the security posture of your Kubernetes clusters</summary>
+    <description>
+      diki is a command-line tool for running compliance checks.
+      
+      Hints:
+      Run `diki --help` for more information or find out more at https://github.com/gardener/diki.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
