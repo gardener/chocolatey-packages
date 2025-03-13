@@ -20,11 +20,10 @@
     <tags>diki</tags>
     <summary>diki is a compliance checker that aims to enhance the security posture of your Kubernetes clusters</summary>
     <description>
-      `diki` is a command-line tool for running compliance checks.
+      diki is a command-line tool for running compliance checks.
       
       Hints:
-      Run `diki view provider` to view supported providers and rulesets.
-      Run `diki --help` for more information.
+      Run `diki --help` for more information or find out more at https://github.com/gardener/diki.
     </description>
   </metadata>
   <files>
