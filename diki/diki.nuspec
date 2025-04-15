@@ -8,11 +8,12 @@
   <metadata>
     <id>diki</id>
     <version>0.0.0</version>
+    <releaseNotes>https://github.com/gardener/diki/releases</releaseNotes>
     <packageSourceUrl>https://github.com/gardener/chocolatey-packages/tree/master/diki</packageSourceUrl>
     <title>diki (Install)</title>
     <authors>SAP SE or an SAP affiliate company and Gardener contributors</authors>
     <projectUrl>https://gardener.cloud</projectUrl>
-    <iconUrl>https://github.com/gardener/gardener/blob/master/logo/gardener-large.png</iconUrl>
+    <iconUrl>https://cdn.statically.io/gh/gardener/gardener/v1.116.1/logo/gardener-large.png</iconUrl>
     <copyright>2025 SAP SE</copyright>
     <licenseUrl>https://github.com/gardener/diki/blob/master/LICENSES/Apache-2.0.txt</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
