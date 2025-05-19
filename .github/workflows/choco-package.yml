@@ -1,5 +1,7 @@
 name: Remote Dispatch Action
 on: [repository_dispatch]
+permissions:
+  contents: write
 jobs:
   package-push-common:
     runs-on: windows-latest
