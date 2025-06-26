@@ -4,6 +4,7 @@ permissions:
   contents: write
   pull-requests: write
 
+# ───────────────────────────── TRIGGERS ─────────────────────────────
 on:
   repository_dispatch:
 
@@ -26,8 +27,40 @@ on:
         type: boolean
         default: false
 
+##############################################################################
+# 1) COMMON PRE-FLIGHT — compute numeric version once
+##############################################################################
 jobs:
+  package-push-common:
+    runs-on: windows-latest
+    outputs:
+      numeric: ${{ steps.extract.outputs.numeric }}
+
+    env:
+      TAG: ${{ github.event_name == 'repository_dispatch'
+                && github.event.client_payload.tag
+                || inputs.tag }}
+
+    steps:
+      - name: Show payload
+        run: |
+          echo "Trigger   : ${{ github.event_name }}"
+          echo "Component : ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.component || inputs.component }}"
+          echo "Tag       : ${{ env.TAG }}"
+          echo "Win sha   : ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.windows_sha || inputs.windows_sha }}"
+
+      - id: extract
+        name: Strip leading 'v'
+        shell: pwsh
+        run: |
+          $n = "${{ env.TAG }}".Replace('v','')
+          echo "numeric=$n" >> $env:GITHUB_OUTPUT
+
+##############################################################################
+# 2) MATRIX JOB — three rows, condition keeps only the matching one
+##############################################################################
   package-push:
+    needs: package-push-common
     runs-on: windows-latest
 
     strategy:
@@ -61,6 +94,13 @@ jobs:
             extra_paths:
               - diki\tools\chocolateyinstall.ps1
 
+    # ── matrix is defined, so this resolves — keeps one row alive
+    if: >-
+      ${{ matrix.component ==
+          (github.event_name == 'repository_dispatch'
+            && github.event.client_payload.component
+            || inputs.component) }}
+
     env:
       FULL_TAG: ${{ github.event_name == 'repository_dispatch'
                     && github.event.client_payload.tag
@@ -70,66 +110,48 @@ jobs:
                        || inputs.windows_sha
                        || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }}
       EXTRA_PATHS: ${{ join(matrix.extra_paths, ' ') }}
+      NUM_VERSION: ${{ needs.package-push-common.outputs.numeric }}
 
     steps:
-      # ─── early-exit for non-matching rows ─────────────────────────────
-      - name: Skip non-matching component rows
-        if: >-
-          ${{ matrix.component !=
-              (github.event_name == 'repository_dispatch'
-                && github.event.client_payload.component
-                || inputs.component) }}
-        run: echo "Skipping row for ${{ matrix.component }}"
-
-      # The remainder of the steps run only for the matching component
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        if: >-
-          ${{ matrix.component ==
-              (github.event_name == 'repository_dispatch'
-                && github.event.client_payload.component
-                || inputs.component) }}
 
-      # extract numeric version
-      - name: Parse numeric version
-        id: ver
+      # — update nuspec & scripts
+      - name: Update package files
         shell: pwsh
-        if: ${{ steps.skip-non-matching? == false }}
-        run: |
-          $clean = "${{ env.FULL_TAG }}".Replace('v','')
-          echo "clean=$clean" >> $env:GITHUB_OUTPUT
-
-      - name: Update nuspec & install scripts
-        shell: pwsh
-        if: ${{ steps.ver.outcome == 'success' }}
         run: |
           & "${{ matrix.script }}" `
             "${{ env.FULL_TAG }}" `
             "${{ env.WINDOWS_SHA }}"
 
+      # — pack
       - name: Choco pack
         shell: pwsh
-        if: ${{ steps.ver.outcome == 'success' }}
         run: |
           choco pack ${{ matrix.nuspec }} `
-                     --version ${{ steps.ver.outputs.clean }} `
+                     --version ${{ env.NUM_VERSION }} `
                      -y --outdir ${{ matrix.pkg_dir }}
 
+      # — push (honours repo var + manual toggle)
       - name: Choco push
-        if: ${{ steps.ver.outcome == 'success' &&
-                vars[matrix.skip_var] != 'true' &&
+        if: ${{ vars[matrix.skip_var] != 'true' &&
                 (github.event_name == 'repository_dispatch'
-                  || inputs.push_to_chocolatey == true) }}
+                  || inputs.push_to_chocolatey) }}
         shell: pwsh
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
         run: |
-          choco push "${{ matrix.pkg_dir }}\${{ matrix.pkg_name }}.${{ steps.ver.outputs.clean }}.nupkg" `
+          choco push "${{ matrix.pkg_dir }}\${{ matrix.pkg_name }}.${{ env.NUM_VERSION }}.nupkg" `
                      --source https://chocolatey.org `
                      -k $Env:CHOCOLATEY_API_KEY
 
-      - name: Create / update PR
+      - name: Push skipped
+        if: ${{ vars[matrix.skip_var] == 'true' ||
+                (github.event_name == 'workflow_dispatch' && !inputs.push_to_chocolatey) }}
+        run: echo "Push skipped for ${{ matrix.component }}."
+
+      # — create / update PR
+      - name: Pull request
         shell: bash
-        if: ${{ steps.ver.outcome == 'success' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -138,10 +160,12 @@ jobs:
 
           branch="update_${{ matrix.component }}_${{ env.FULL_TAG }}"
           git switch -c "$branch"
-          git add "${{ matrix.pkg_dir }}\\${{ matrix.pkg_name }}.${{ steps.ver.outputs.clean }}.nupkg"
+
+          git add "${{ matrix.pkg_dir }}\\${{ matrix.pkg_name }}.${{ env.NUM_VERSION }}.nupkg"
           git add "${{ matrix.nuspec }}"
           for p in ${EXTRA_PATHS}; do git add "$p"; done
-          git commit -m "update ${{ matrix.component }} to ${{ env.FULL_TAG }}"
+
+          git commit -m "update ${{ matrix.component }} to ${{ env.FULL_TAG }}" || echo "nothing to commit"
           git push --force-with-lease -u origin "$branch"
 
           gh pr create \
