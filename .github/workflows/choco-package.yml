@@ -1,105 +1,184 @@
 name: Remote Dispatch Action
-on: [repository_dispatch]
+
+on:
+  repository_dispatch:
+
+  workflow_dispatch:
+    inputs:
+      component:
+        description: 'Component (gardenlogin | gardenctl-v2 | diki)'
+        required: true
+        type: string
+      tag:
+        description: 'Version / tag (e.g. v1.4.0)'
+        required: true
+        type: string
+      windows_sha:
+        description: 'Optional sha256 for the Windows binary (defaults to dummy hash)'
+        required: false
+        type: string
+      push_to_chocolatey:
+        description: 'Set true to push the .nupkg (default: false → dry-run)'
+        required: false
+        default: false
+        type: boolean
+
 permissions:
-  contents: write
+  contents: write          # push branch
+  pull-requests: write     # open PR
+
+##############################################################################
+# 1) common job – derive CLEAN_VERSION once
+##############################################################################
 jobs:
   package-push-common:
     runs-on: windows-latest
     outputs:
-      cleaned_version: ${{ steps.get_version.outputs.cleaned_version }}
+      cleaned_version: ${{ steps.version.outputs.cleaned_version }}
+
+    env:
+      TAG: >-
+        ${{ github.event_name == 'repository_dispatch'
+            && github.event.client_payload.tag
+            || inputs.tag }}
+
     steps:
-      - name: Event Information
-        id: event_info
+      - name: Event summary
         run: |
-          echo "Event '${{ github.event.action }}' payload '${{ github.event.client_payload.tag }}'"
-          echo "Windows binary hash '${{ github.event.client_payload.windows_sha }}'"
-      - name: Get Version
-        id: get_version
+          echo "Triggered by  : ${{ github.event_name }}"
+          echo "Component      : ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.component || inputs.component }}"
+          echo "Version tag    : ${{ env.TAG }}"
+          echo "windows_sha    : ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.windows_sha || inputs.windows_sha }}"
+
+      - name: Extract numeric version
+        id: version
+        shell: pwsh
         run: |
-          $version="${{ github.event.client_payload.tag }}"
-          $cleaned_version=$version.replace('v','')
-          echo "cleaned_version=$cleaned_version" >> $env:GITHUB_OUTPUT
-  package-push-gardenlogin:
-    if: github.event.client_payload.component == 'gardenlogin'
+          $v = "${{ env.TAG }}".Replace('v','')
+          echo "cleaned_version=$v" >> $env:GITHUB_OUTPUT
+
+##############################################################################
+# 2) matrix job – one row per component, only matching row executes
+##############################################################################
+  package-push:
     runs-on: windows-latest
     needs: package-push-common
+
+    strategy:
+      matrix:
+        include:
+          - component: gardenlogin
+            script: .github\workflows\update-gardenlogin.ps1
+            nuspec: gardenlogin\gardenlogin.nuspec
+            pkg_dir: gardenlogin
+            pkg_name: gardenlogin
+            skip_var: SKIP_CHOCO_PUSH_GARDENLOGIN
+            extra_paths:
+              - gardenlogin\tools\chocolateyinstall.ps1
+              - gardenlogin\tools\chocolateyuninstall.ps1
+
+          - component: gardenctl-v2
+            script: .github\workflows\update-gardenctl-v2.ps1
+            nuspec: gardenctl-v2\gardenctl-v2.nuspec
+            pkg_dir: gardenctl-v2
+            pkg_name: gardenctl-v2
+            skip_var: SKIP_CHOCO_PUSH_GARDENCTL_V2
+            extra_paths:
+              - gardenctl-v2\tools\chocolateyinstall.ps1
+
+          - component: diki
+            script: .github\workflows\update-diki.ps1
+            nuspec: diki\diki.nuspec
+            pkg_dir: diki
+            pkg_name: diki
+            skip_var: SKIP_CHOCO_PUSH_DIKI
+            extra_paths:
+              - diki\tools\chocolateyinstall.ps1
+
+    # only the row whose component matches the payload runs
+    if: |
+      ${{
+        matrix.component ==
+        (github.event_name == 'repository_dispatch'
+          && github.event.client_payload.component
+          || inputs.component)
+      }}
+
+    env:
+      # sha from event or manual input; default to dummy hash
+      WINDOWS_SHA: >-
+        ${{ github.event_name == 'repository_dispatch'
+            && github.event.client_payload.windows_sha
+            || inputs.windows_sha
+            || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }}
+
+      NUM_VERSION: ${{ needs.package-push-common.outputs.cleaned_version }}
+
+      FULL_TAG: >-
+        ${{ github.event_name == 'repository_dispatch'
+            && github.event.client_payload.tag
+            || inputs.tag }}
+
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      # --- update nuspec + install scripts ----------------------------------
       - name: Update package source files
-        run: .github\workflows\update-gardenlogin.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
+        shell: pwsh
+        run: |
+          & "${{ matrix.script }}" `
+            "${{ env.FULL_TAG }}" `
+            "${{ env.WINDOWS_SHA }}"
+
+      # --- choco pack --------------------------------------------------------
       - name: Choco pack
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: pack gardenlogin\gardenlogin.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir gardenlogin
+        shell: pwsh
+        run: |
+          choco pack ${{ matrix.nuspec }} `
+                     --version ${{ env.NUM_VERSION }} `
+                     -y `
+                     --outdir ${{ matrix.pkg_dir }}
+
+      # --- choco push (skippable) -------------------------------------------
       - name: Choco push
-        if: ${{ vars.SKIP_CHOCO_PUSH_GARDENLOGIN != 'true' }}
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: push "gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
-      - name: Choco push - print skip info
-        if: ${{ vars.SKIP_CHOCO_PUSH_GARDENLOGIN == 'true' }}
-        run: echo "Choco push step was skipped for package-push-gardenlogin."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # pin@v7.0.8
-        with:
-          add-paths: gardenlogin\gardenlogin.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenlogin\tools\chocolateyinstall.ps1,gardenlogin\tools\chocolateyuninstall.ps1
-          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
-          delete-branch: true
-          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
-          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
-  package-push-gardenctl-v2:
-    if: github.event.client_payload.component == 'gardenctl-v2'
-    runs-on: windows-latest
-    needs: package-push-common
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
-      - name: Update package source files
-        run: .github\workflows\update-gardenctl-v2.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
-      - name: Choco pack
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: pack gardenctl-v2\gardenctl-v2.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir gardenctl-v2
-      - name: Choco push
-        if: ${{ vars.SKIP_CHOCO_PUSH_GARDENCTL_V2 != 'true' }}
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: push "gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
-      - name: Choco push - print skip info
-        if: ${{ vars.SKIP_CHOCO_PUSH_GARDENCTL_V2 == 'true' }}
-        run: echo "Choco push step was skipped for package-push-gardenctl-v2."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # pin@v7.0.8
-        with:
-          add-paths: gardenctl-v2\gardenctl-v2.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,gardenctl-v2\tools\chocolateyinstall.ps1
-          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
-          delete-branch: true
-          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
-          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
-  package-push-diki:
-    if: github.event.client_payload.component == 'diki'
-    runs-on: windows-latest
-    needs: package-push-common
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
-      - name: Update package source files
-        run: .github\workflows\update-diki.ps1 ${{ github.event.client_payload.tag }} ${{ github.event.client_payload.windows_sha }}
-      - name: Choco pack
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: pack diki\diki.nuspec --version=${{ needs.package-push-common.outputs.cleaned_version }} -y --outdir diki
-      - name: Choco push
-        if: ${{ vars.SKIP_CHOCO_PUSH_DIKI != 'true' }}
-        uses: crazy-max/ghaction-chocolatey@6828f16489ec8d2968b55066766cb41f0d278f2a # pin@v3.3.0
-        with:
-          args: push "diki\diki.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg" --source https://chocolatey.org -k ${{ secrets.CHOCOLATEY_API_KEY }}
-      - name: Choco push - print skip info
-        if: ${{ vars.SKIP_CHOCO_PUSH_DIKI == 'true' }}
-        run: echo "Choco push step was skipped for package-push-diki."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # pin@v7.0.8
-        with:
-          add-paths: diki\diki.${{ needs.package-push-common.outputs.cleaned_version }}.nupkg,diki\tools\chocolateyinstall.ps1
-          branch: update_${{ github.event.client_payload.component }}_${{ github.event.client_payload.tag }}
-          delete-branch: true
-          title: update ${{ github.event.client_payload.component }} to ${{ github.event.client_payload.tag }}
-          body: This PR adds Chocolatey package for version ${{ github.event.client_payload.tag }} and updates package sources
+        if: ${{ vars[matrix.skip_var] != 'true' &&
+                (github.event_name == 'repository_dispatch' ||
+                 (github.event_name == 'workflow_dispatch' && inputs.push_to_chocolatey == 'true')) }}
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          choco push "${{ matrix.pkg_dir }}\${{ matrix.pkg_name }}.${{ env.NUM_VERSION }}.nupkg" `
+                     --source https://chocolatey.org `
+                     -k $Env:CHOCOLATEY_API_KEY
+
+      - name: Choco push skipped
+        if: ${{ vars[matrix.skip_var] == 'true' ||
+                (github.event_name == 'workflow_dispatch' && inputs.push_to_chocolatey != 'true') }}
+        run: echo "Choco push step was skipped for ${{ matrix.component }}."
+
+      # --- create / update PR -----------------------------------------------
+      - name: Create pull request
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          branch="update_${{ matrix.component }}_${{ env.FULL_TAG }}"
+          git switch -c "$branch"
+
+          # stage the .nupkg + nuspec + any extra paths
+          git add "${{ matrix.pkg_dir }}\\${{ matrix.pkg_name }}.${{ env.NUM_VERSION }}.nupkg"
+          git add "${{ matrix.nuspec }}"
+          for path in ${{ join(matrix.extra_paths, ' ') }}; do git add "$path"; done
+
+          git commit -m "update ${{ matrix.component }} to ${{ env.FULL_TAG }}"
+          git push --force-with-lease -u origin "$branch"
+
+          gh pr create \
+            --head "$branch" \
+            --base "${{ github.event.repository.default_branch }}" \
+            --title "update ${{ matrix.component }} to ${{ env.FULL_TAG }}" \
+            --body  "This PR adds or updates the Chocolatey package for **${{ matrix.component }}** (${ env.FULL_TAG }) and updates the package sources."
