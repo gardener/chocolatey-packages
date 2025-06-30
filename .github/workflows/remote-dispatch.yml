@@ -157,6 +157,7 @@ jobs:
 
           branch="update_${{ matrix.component }}_${{ env.FULL_TAG }}"
           git switch -c "$branch"
+
           git add "${{ matrix.pkg_dir }}\\${{ matrix.pkg_name }}.${{ env.NUM_VERSION }}.nupkg"
           git add "${{ matrix.nuspec }}"
           for p in ${EXTRA_PATHS}; do git add "$p"; done
@@ -167,4 +168,5 @@ jobs:
             --head "$branch" \
             --base "${{ github.event.repository.default_branch }}" \
             --title "update ${{ matrix.component }} to ${{ env.FULL_TAG }}" \
-            --body  "Updates Chocolatey package for **${{ matrix.component }}** (${ env.FULL_TAG })."
+            --body  "Updates Chocolatey package for **${{ matrix.component }}** (${{ env.FULL_TAG }})."
+
