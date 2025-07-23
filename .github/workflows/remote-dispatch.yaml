@@ -11,9 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       component:
-        description: "Component (gardenlogin | gardenctl-v2 | diki)"
+        description: 'Component'
         required: true
-        type: string
+        type: choice
+        options:
+          - gardenlogin
+          - gardenctl-v2
+          - diki
       tag:
         description: "Version / tag (e.g. v1.4.0)"
         required: true
@@ -36,9 +40,7 @@ jobs:
     outputs:
       numeric: ${{ steps.strip.outputs.num }}
     env:
-      TAG: ${{ github.event_name == 'repository_dispatch'
-                && github.event.client_payload.tag
-                || inputs.tag }}
+      TAG: ${{ inputs.tag || github.event.client_payload.tag }}
 
     steps:
       - id: strip
@@ -54,20 +56,11 @@ jobs:
     needs: version-info
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        component:
-          - ${{ github.event_name == 'repository_dispatch'
-               && github.event.client_payload.component
-               || inputs.component }}
-
     env:
-      FULL_TAG:   ${{ needs.version-info.outputs.numeric && github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
+      FULL_TAG:   ${{ inputs.tag || github.event.client_payload.tag }}
       NUM_VERSION: ${{ needs.version-info.outputs.numeric }}
-      WINDOWS_SHA: ${{ github.event_name == 'repository_dispatch'
-                       && github.event.client_payload.windows_sha
-                       || inputs.windows_sha
-                       || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }}
+      COMPONENT: ${{ inputs.component || github.event.client_payload.component }}
+      WINDOWS_SHA: ${{ github.event.client_payload.windows_sha || inputs.windows_sha || 'dummySHA256sum' }}
 
     steps:
     # ── Map component ➜ metadata --------------------------------------------
@@ -75,7 +68,7 @@ jobs:
       name: Resolve paths / flags
       shell: bash
       run: |
-        case "${{ matrix.component }}" in
+        case "${{ env.COMPONENT }}" in
           gardenlogin)
             echo "SCRIPT=.github/workflows/update-gardenlogin.ps1" >> $GITHUB_OUTPUT
             echo "NUSPEC=gardenlogin/gardenlogin.nuspec"           >> $GITHUB_OUTPUT
@@ -138,27 +131,28 @@ jobs:
               (github.event_name == 'workflow_dispatch' && !inputs.push_to_chocolatey) }}
       run: echo "Chocolatey push skipped."
 
+    # ── Git identity ---------------------------------------------------------
+    - name: Setup Git Identity
+      uses: gardener/cc-utils/.github/actions/setup-git-identity@master
+
     # ── Pull request ---------------------------------------------------------
     - name: Create / update pull request
       shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git config user.name  "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-        branch="update_${{ matrix.component }}_${{ env.FULL_TAG }}"
+        branch="update_${{ env.COMPONENT }}_${{ env.FULL_TAG }}"
         git switch -c "$branch"
 
         git add "${{ steps.meta.outputs.PKG_DIR }}\\${{ steps.meta.outputs.PKG_NAME }}.${{ env.NUM_VERSION }}.nupkg"
         git add "${{ steps.meta.outputs.NUSPEC }}"
         for p in ${{ steps.meta.outputs.EXTRA_PATHS }}; do git add "$p"; done
 
-        git commit -m "update ${{ matrix.component }} to ${{ env.FULL_TAG }}" || echo "nothing new"
+        git commit -m "update ${{ env.COMPONENT }} to ${{ env.FULL_TAG }}" || echo "nothing new"
         git push --force-with-lease -u origin "$branch"
 
         gh pr create \
           --head "$branch" \
           --base "${{ github.event.repository.default_branch }}" \
-          --title "update ${{ matrix.component }} to ${{ env.FULL_TAG }}" \
-          --body  "Updates Chocolatey package for **${{ matrix.component }}** (${{ env.FULL_TAG }})."
+          --title "update ${{ env.COMPONENT }} to ${{ env.FULL_TAG }}" \
+          --body  "Updates Chocolatey package for **${{ env.COMPONENT }}** (${{ env.FULL_TAG }})."
