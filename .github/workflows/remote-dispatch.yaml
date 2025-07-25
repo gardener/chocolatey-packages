@@ -36,7 +36,7 @@ on:
 ##############################################################################
 jobs:
   version-info:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     outputs:
       numeric: ${{ steps.strip.outputs.num }}
     env:
@@ -93,6 +93,7 @@ jobs:
             echo "SKIP_VAR=SKIP_CHOCO_PUSH_DIKI"                    >> $GITHUB_OUTPUT
             echo "EXTRA_PATHS=diki/tools/chocolateyinstall.ps1"     >> $GITHUB_OUTPUT
             ;;
+          *) echo "Invalid component: ${{ env.COMPONENT }}" && exit 1 ;;
         esac
 
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683   # v4.2.2
@@ -146,7 +147,9 @@ jobs:
 
         git add "${{ steps.meta.outputs.PKG_DIR }}\\${{ steps.meta.outputs.PKG_NAME }}.${{ env.NUM_VERSION }}.nupkg"
         git add "${{ steps.meta.outputs.NUSPEC }}"
-        for p in ${{ steps.meta.outputs.EXTRA_PATHS }}; do git add "$p"; done
+        for p in ${{ steps.meta.outputs.EXTRA_PATHS }};
+          do git add "$p";
+        done
 
         git commit -m "update ${{ env.COMPONENT }} to ${{ env.FULL_TAG }}" || echo "nothing new"
         git push --force-with-lease -u origin "$branch"
