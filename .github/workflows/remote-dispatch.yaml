@@ -1,4 +1,4 @@
-name: Remote Dispatch Action
+name: Update Chocolatey Package
 
 permissions:
   contents: write
@@ -60,7 +60,7 @@ jobs:
       FULL_TAG:   ${{ inputs.tag || github.event.client_payload.tag }}
       NUM_VERSION: ${{ needs.version-info.outputs.numeric }}
       COMPONENT: ${{ inputs.component || github.event.client_payload.component }}
-      WINDOWS_SHA: ${{ github.event.client_payload.windows_sha || inputs.windows_sha || 'dummySHA256sum' }}
+      WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha || 'dummySHA256sum' }}
 
     steps:
     # ── Map component ➜ metadata --------------------------------------------
