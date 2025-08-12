@@ -137,10 +137,17 @@ jobs:
       uses: gardener/cc-utils/.github/actions/setup-git-identity@master
 
     # ── Pull request ---------------------------------------------------------
+    - name: Get GitHub Token
+      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e   # v2.0.6
+      id: token
+      with:
+        app-id: ${{ vars.GARDENER_GITHUB_ACTIONS_APP_ID }}
+        private-key: ${{ secrets.GARDENER_GITHUB_ACTIONS_PRIVATE_KEY }}
+          
     - name: Create / update pull request
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.token.outputs.token }}
       run: |
         branch="update_${{ env.COMPONENT }}_${{ env.FULL_TAG }}"
         git switch -c "$branch"
