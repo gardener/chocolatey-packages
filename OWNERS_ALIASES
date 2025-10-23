@@ -1,0 +1,11 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  chocolatey-packages-reviewers:
+  - petersutter
+  - grolu
+  - klocke-io
+  chocolatey-packages-approvers:
+  - petersutter
+  - grolu
+  - klocke-io
