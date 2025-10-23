@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$url64      = "https://github.com/gardener/diki/releases/download/v0.20.0/diki-windows-amd64"
+$url64      = "https://github.com/gardener/diki/releases/download/v0.20.0/diki-windows-amd64.exe"
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 $packageArgs = @{
