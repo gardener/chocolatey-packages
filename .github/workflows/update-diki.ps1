@@ -10,7 +10,7 @@ Param(
 
 @"	
 `$ErrorActionPreference = 'Stop'
-`$url64      = "https://github.com/gardener/diki/releases/download/$version/diki-windows-amd64"
+`$url64      = "https://github.com/gardener/diki/releases/download/$version/diki-windows-amd64.exe"
 `$toolsDir   = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
 
 `$packageArgs = @{
