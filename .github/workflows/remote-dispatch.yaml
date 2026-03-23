@@ -137,6 +137,10 @@ jobs:
       uses: gardener/cc-utils/.github/actions/setup-git-identity@master
 
     # ── Pull request ---------------------------------------------------------
+    - name: Install yq
+      run: |
+        choco install yq
+
     - name: Get GitHub Token
       uses: gardener/cc-utils/.github/actions/github-auth@master
       id: token
