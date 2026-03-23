@@ -2,7 +2,7 @@ name: Update Chocolatey Package
 
 permissions:
   contents: write
-  pull-requests: write
+  id-token: write
 
 # ───────────── TRIGGERS ─────────────
 on:
@@ -138,12 +138,14 @@ jobs:
 
     # ── Pull request ---------------------------------------------------------
     - name: Get GitHub Token
-      uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf   # v2.2.1
+      uses: gardener/cc-utils/.github/actions/github-auth@master
       id: token
       with:
-        app-id: ${{ vars.GARDENER_GITHUB_ACTIONS_APP_ID }}
-        private-key: ${{ secrets.GARDENER_GITHUB_ACTIONS_PRIVATE_KEY }}
-          
+        token-server: ${{ vars.FEDERATED_GITHUB_ACCESS_TOKEN_SERVER }}
+        repositories: ${{ github.event.repository.name }}
+        permissions: |
+          pull-requests: write
+
     - name: Create / update pull request
       shell: bash
       env:
