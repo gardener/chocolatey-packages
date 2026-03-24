@@ -62,14 +62,10 @@ update pull request, you can manually trigger the workflow:
 7. Optionally set `push_to_chocolatey` if you explicitly want the workflow run to push the package.
 8. Run the workflow. It will generate the package update and open a pull request.
 
-### How to obtain the required hash
+#### How to obtain the required hash
 
 The required SHA256 digest can be taken from the build workflow in the source repository for the
 corresponding release.
 
 Look for the workflow run where the release artifact for the component was built and published.
-Use the Windows artifact digest from that workflow as input for the manual workflow run in this
-repository.
-
-When enabling automation for an additional source repository, make sure that repository's release
-workflow passes the correct `component`, `tag`, and `windows_sha` values when triggering this repo.
+Use the Windows artifact digest from that workflow as input for the manual workflow run in this repository.
