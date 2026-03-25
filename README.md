@@ -12,4 +12,8 @@ $ choco install package_name
 
 ## Development
 
-https://docs.chocolatey.org/en-us/create/create-packages
+For maintainer guidance, Chocolatey package automation details, and manual update instructions, see the
+[developer documentation in `CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+For Chocolatey package authoring and maintenance details, see the
+[Chocolatey package creation documentation](https://docs.chocolatey.org/en-us/create/create-packages).
