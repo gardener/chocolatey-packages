@@ -64,8 +64,9 @@ update pull request, you can manually trigger the workflow:
 
 #### How to obtain the required hash
 
-The required SHA256 digest can be taken from the build workflow in the source repository for the
+The required SHA256 digests can be taken from the build workflow in the source repository for the
 corresponding release.
 
-Look for the workflow run where the release artifact for the component was built and published.
-Use the Windows artifact digest from that workflow as input for the manual workflow run in this repository.
+Look for the step named **Read-Digests** in the release/build workflow run. This step can usually be found in the last job of the release pipeline and should be labelled like *publish-to-package-repositories / update_gardenlogin_in_homebrew_tap_and_chocolatey_packages* or similar.
+
+Use the digests from that step as input for the manual workflow run in this repository.
