@@ -56,10 +56,10 @@ update pull request, you can manually trigger the workflow:
 1. Open the GitHub Actions page for this repository.
 2. Select the **Update Chocolatey Package** workflow.
 3. Click **Run workflow**.
-4. Choose the `component` you want to update.
-5. Enter the release `tag`.
-6. Provide the `windows_sha` value.
-7. Optionally set `push_to_chocolatey` if you explicitly want the workflow run to push the package.
+4. In **Component**, choose the component you want to update.
+5. In **Version / tag (e.g. v1.4.0)**, enter the release tag.
+6. In **Provide sha256 for Windows binary**, provide the `windows_sha` value.
+7. Optionally enable **true → push .nupkg** if you explicitly want the workflow run to push the generated package to Chocolatey.
 8. Run the workflow. It will generate the package update and open a pull request.
 
 #### How to obtain the required hash
