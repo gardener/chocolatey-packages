@@ -23,8 +23,8 @@ on:
         required: true
         type: string
       windows_sha:
-        description: "Optional sha256 for Windows binary"
-        required: false
+        description: "Provide sha256 for Windows binary"
+        required: true
         type: string
       push_to_chocolatey:
         description: "true → push .nupkg"
@@ -60,7 +60,7 @@ jobs:
       FULL_TAG:   ${{ inputs.tag || github.event.client_payload.tag }}
       NUM_VERSION: ${{ needs.version-info.outputs.numeric }}
       COMPONENT: ${{ inputs.component || github.event.client_payload.component }}
-      WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha || 'dummySHA256sum' }}
+      WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha }}
 
     steps:
     # ── Map component ➜ metadata --------------------------------------------
