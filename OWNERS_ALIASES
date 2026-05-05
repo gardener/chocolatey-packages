@@ -4,8 +4,8 @@ aliases:
   chocolatey-packages-reviewers:
   - petersutter
   - grolu
-  - klocke-io
+  - AleksandarSavchev
   chocolatey-packages-approvers:
   - petersutter
   - grolu
-  - klocke-io
+  - AleksandarSavchev
