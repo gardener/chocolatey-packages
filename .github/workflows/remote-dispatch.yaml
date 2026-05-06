@@ -46,7 +46,7 @@ jobs:
       - id: strip
         shell: pwsh
         run: |
-          $num = "${{ env.TAG }}".Replace('v','')
+          $num = "$env:TAG".Replace('v','')
           echo "num=$num" >> $env:GITHUB_OUTPUT
 
 ##############################################################################
@@ -68,7 +68,7 @@ jobs:
       name: Resolve paths / flags
       shell: bash
       run: |
-        case "${{ env.COMPONENT }}" in
+        case "$COMPONENT" in
           gardenlogin)
             echo "SCRIPT=.github/workflows/update-gardenlogin.ps1" >> $GITHUB_OUTPUT
             echo "NUSPEC=gardenlogin/gardenlogin.nuspec"           >> $GITHUB_OUTPUT
@@ -93,7 +93,7 @@ jobs:
             echo "SKIP_VAR=SKIP_CHOCO_PUSH_DIKI"                    >> $GITHUB_OUTPUT
             echo "EXTRA_PATHS=diki/tools/chocolateyinstall.ps1"     >> $GITHUB_OUTPUT
             ;;
-          *) echo "Invalid component: ${{ env.COMPONENT }}" && exit 1 ;;
+          *) echo "Invalid component: $COMPONENT" && exit 1 ;;
         esac
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd   # v6.0.2
@@ -103,18 +103,23 @@ jobs:
     # ── Update nuspec & helper scripts ---------------------------------------
     - name: Update package source files
       shell: pwsh
+      env:
+        SCRIPT: ${{ steps.meta.outputs.SCRIPT }}
       run: |
-        & "${{ steps.meta.outputs.SCRIPT }}" `
-          "${{ env.FULL_TAG }}" `
-          "${{ env.WINDOWS_SHA }}"
+        & "$env:SCRIPT" `
+          "$env:FULL_TAG" `
+          "$env:WINDOWS_SHA"
 
     # ── Pack -----------------------------------------------------------------
     - name: Choco pack
       shell: pwsh
+      env:
+        NUSPEC: ${{ steps.meta.outputs.NUSPEC }}
+        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
       run: |
-        choco pack ${{ steps.meta.outputs.NUSPEC }} `
-                   --version ${{ env.NUM_VERSION }} `
-                   -y --outdir ${{ steps.meta.outputs.PKG_DIR }}
+        choco pack $env:NUSPEC `
+                   --version $env:NUM_VERSION `
+                   -y --outdir $env:PKG_DIR
 
     # ── Push (repo flag & manual flag respected) -----------------------------
     - name: Choco push
@@ -124,10 +129,12 @@ jobs:
       shell: pwsh
       env:
         CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
+        PKG_NAME: ${{ steps.meta.outputs.PKG_NAME }}
       run: |
-        choco push "${{ steps.meta.outputs.PKG_DIR }}\${{ steps.meta.outputs.PKG_NAME }}.${{ env.NUM_VERSION }}.nupkg" `
+        choco push "$env:PKG_DIR\$env:PKG_NAME.$env:NUM_VERSION.nupkg" `
                    --source https://chocolatey.org `
-                   -k $Env:CHOCOLATEY_API_KEY
+                   -k $env:CHOCOLATEY_API_KEY
 
     - name: Push skipped
       if: ${{ vars[steps.meta.outputs.SKIP_VAR] == 'true' ||
@@ -157,6 +164,11 @@ jobs:
       env:
         GIT_PUSH_TOKEN: ${{ github.token }}
         GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
+        PKG_NAME: ${{ steps.meta.outputs.PKG_NAME }}
+        NUSPEC: ${{ steps.meta.outputs.NUSPEC }}
+        EXTRA_PATHS: ${{ steps.meta.outputs.EXTRA_PATHS }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       run: |
         BASIC_AUTH="$(printf 'x-access-token:%s' "$GIT_PUSH_TOKEN" | base64 | tr -d '\n')"
         AUTH_HEADER="AUTHORIZATION: basic $BASIC_AUTH"
@@ -172,20 +184,20 @@ jobs:
           git "$@"
         }
 
-        branch="update_${{ env.COMPONENT }}_${{ env.FULL_TAG }}"
+        branch="update_${COMPONENT}_${FULL_TAG}"
         git switch -c "$branch"
 
-        git add "${{ steps.meta.outputs.PKG_DIR }}\\${{ steps.meta.outputs.PKG_NAME }}.${{ env.NUM_VERSION }}.nupkg"
-        git add "${{ steps.meta.outputs.NUSPEC }}"
-        for p in ${{ steps.meta.outputs.EXTRA_PATHS }};
+        git add "${PKG_DIR}\\${PKG_NAME}.${NUM_VERSION}.nupkg"
+        git add "$NUSPEC"
+        for p in $EXTRA_PATHS;
           do git add "$p";
         done
 
-        git commit -m "update ${{ env.COMPONENT }} to ${{ env.FULL_TAG }}" || echo "nothing new"
+        git commit -m "update $COMPONENT to $FULL_TAG" || echo "nothing new"
         git_with_auth push --force-with-lease -u origin "$branch"
 
         gh pr create \
           --head "$branch" \
-          --base "${{ github.event.repository.default_branch }}" \
-          --title "update ${{ env.COMPONENT }} to ${{ env.FULL_TAG }}" \
-          --body  "Updates Chocolatey package for **${{ env.COMPONENT }}** (${{ env.FULL_TAG }})."
+          --base "$DEFAULT_BRANCH" \
+          --title "update $COMPONENT to $FULL_TAG" \
+          --body  "Updates Chocolatey package for **$COMPONENT** ($FULL_TAG)."
