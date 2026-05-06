@@ -64,6 +64,28 @@ jobs:
       WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha }}
 
     steps:
+    # ── Validate inputs -----------------------------------------------------
+    - name: Validate inputs
+      shell: bash
+      run: |
+        case "$COMPONENT" in
+          gardenlogin|gardenctl-v2|diki) ;;
+          *)
+            echo "Error: Invalid component '$COMPONENT'"
+            exit 1
+            ;;
+        esac
+
+        if ! echo "$FULL_TAG" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+          echo "Error: Invalid tag '$FULL_TAG'"
+          exit 1
+        fi
+
+        if ! echo "$WINDOWS_SHA" | grep -qE '^[0-9a-f]{64}$'; then
+          echo "Error: Invalid SHA256 for WINDOWS_SHA"
+          exit 1
+        fi
+
     # ── Map component ➜ metadata --------------------------------------------
     - id: meta
       name: Resolve paths / flags
