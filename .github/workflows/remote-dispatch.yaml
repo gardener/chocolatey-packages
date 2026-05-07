@@ -30,197 +30,246 @@ on:
         default: false
 
 ##############################################################################
-# 1) PRE-FLIGHT — strip leading “v”, shared by all components
+# 1) RESOLVE INPUTS — validate & emit metadata (no repo access needed)
 ##############################################################################
 jobs:
-  version-info:
+  resolve-inputs:
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
-      numeric: ${{ steps.strip.outputs.num }}
-    env:
-      TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+      full_tag: ${{ steps.validate.outputs.full_tag }}
+      numeric: ${{ steps.validate.outputs.numeric }}
+      component: ${{ steps.validate.outputs.component }}
+      windows_sha: ${{ steps.validate.outputs.windows_sha }}
+      script: ${{ steps.meta.outputs.SCRIPT }}
+      nuspec: ${{ steps.meta.outputs.NUSPEC }}
+      pkg_dir: ${{ steps.meta.outputs.PKG_DIR }}
+      pkg_name: ${{ steps.meta.outputs.PKG_NAME }}
+      skip_var: ${{ steps.meta.outputs.SKIP_VAR }}
+      extra_paths: ${{ steps.meta.outputs.EXTRA_PATHS }}
 
     steps:
-      - id: strip
-        shell: pwsh
+      - name: Validate inputs
+        id: validate
+        shell: bash
+        env:
+          FULL_TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+          COMPONENT: ${{ inputs.component || github.event.client_payload.component }}
+          WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha }}
         run: |
-          $num = "$env:TAG".Replace('v','')
-          echo "num=$num" >> $env:GITHUB_OUTPUT
+          case "$COMPONENT" in
+            gardenlogin|gardenctl-v2|diki) ;;
+            *)
+              echo "Error: Invalid component '$COMPONENT'"
+              exit 1
+              ;;
+          esac
+
+          if ! echo "$FULL_TAG" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "Error: Invalid tag '$FULL_TAG'"
+            exit 1
+          fi
+
+          if ! echo "$WINDOWS_SHA" | grep -qE '^[0-9a-f]{64}$'; then
+            echo "Error: Invalid SHA256 for WINDOWS_SHA"
+            exit 1
+          fi
+
+          NUMERIC="${FULL_TAG#v}"
+          echo "full_tag=$FULL_TAG" >> "$GITHUB_OUTPUT"
+          echo "numeric=$NUMERIC" >> "$GITHUB_OUTPUT"
+          echo "component=$COMPONENT" >> "$GITHUB_OUTPUT"
+          echo "windows_sha=$WINDOWS_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve paths / flags
+        id: meta
+        shell: bash
+        env:
+          COMPONENT: ${{ steps.validate.outputs.component }}
+        run: |
+          case "$COMPONENT" in
+            gardenlogin)
+              echo "SCRIPT=.github/workflows/update-gardenlogin.ps1" >> "$GITHUB_OUTPUT"
+              echo "NUSPEC=gardenlogin/gardenlogin.nuspec"           >> "$GITHUB_OUTPUT"
+              echo "PKG_DIR=gardenlogin"                             >> "$GITHUB_OUTPUT"
+              echo "PKG_NAME=gardenlogin"                            >> "$GITHUB_OUTPUT"
+              echo "SKIP_VAR=SKIP_CHOCO_PUSH_GARDENLOGIN"            >> "$GITHUB_OUTPUT"
+              echo "EXTRA_PATHS=gardenlogin/tools/chocolateyinstall.ps1 gardenlogin/tools/chocolateyuninstall.ps1" >> "$GITHUB_OUTPUT"
+              ;;
+            gardenctl-v2)
+              echo "SCRIPT=.github/workflows/update-gardenctl-v2.ps1" >> "$GITHUB_OUTPUT"
+              echo "NUSPEC=gardenctl-v2/gardenctl-v2.nuspec"          >> "$GITHUB_OUTPUT"
+              echo "PKG_DIR=gardenctl-v2"                             >> "$GITHUB_OUTPUT"
+              echo "PKG_NAME=gardenctl-v2"                            >> "$GITHUB_OUTPUT"
+              echo "SKIP_VAR=SKIP_CHOCO_PUSH_GARDENCTL_V2"            >> "$GITHUB_OUTPUT"
+              echo "EXTRA_PATHS=gardenctl-v2/tools/chocolateyinstall.ps1" >> "$GITHUB_OUTPUT"
+              ;;
+            diki)
+              echo "SCRIPT=.github/workflows/update-diki.ps1"         >> "$GITHUB_OUTPUT"
+              echo "NUSPEC=diki/diki.nuspec"                          >> "$GITHUB_OUTPUT"
+              echo "PKG_DIR=diki"                                     >> "$GITHUB_OUTPUT"
+              echo "PKG_NAME=diki"                                    >> "$GITHUB_OUTPUT"
+              echo "SKIP_VAR=SKIP_CHOCO_PUSH_DIKI"                    >> "$GITHUB_OUTPUT"
+              echo "EXTRA_PATHS=diki/tools/chocolateyinstall.ps1"     >> "$GITHUB_OUTPUT"
+              ;;
+            *) echo "Invalid component: $COMPONENT" && exit 1 ;;
+          esac
 
 ##############################################################################
-# 2) PACKAGE-PUSH — one matrix row (component) resolved at runtime
+# 2) PACKAGE — checkout, update sources, choco pack, upload artifact
 ##############################################################################
-  package-push:
-    needs: version-info
+  package:
+    needs: resolve-inputs
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    env:
+      FULL_TAG: ${{ needs.resolve-inputs.outputs.full_tag }}
+      NUM_VERSION: ${{ needs.resolve-inputs.outputs.numeric }}
+      COMPONENT: ${{ needs.resolve-inputs.outputs.component }}
+      WINDOWS_SHA: ${{ needs.resolve-inputs.outputs.windows_sha }}
+      PKG_DIR: ${{ needs.resolve-inputs.outputs.pkg_dir }}
+      PKG_NAME: ${{ needs.resolve-inputs.outputs.pkg_name }}
+      NUSPEC: ${{ needs.resolve-inputs.outputs.nuspec }}
+      SCRIPT: ${{ needs.resolve-inputs.outputs.script }}
+      EXTRA_PATHS: ${{ needs.resolve-inputs.outputs.extra_paths }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Update package source files
+        shell: pwsh
+        run: |
+          & "$env:SCRIPT" `
+            "$env:FULL_TAG" `
+            "$env:WINDOWS_SHA"
+
+      - name: Choco pack
+        shell: pwsh
+        run: |
+          choco pack $env:NUSPEC `
+                     --version $env:NUM_VERSION `
+                     -y --outdir $env:PKG_DIR
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-update
+          path: ${{ env.PKG_DIR }}/
+          if-no-files-found: error
+          retention-days: 1
+
+##############################################################################
+# 3) PUBLISH — download nupkg, push to Chocolatey
+##############################################################################
+  publish-chocolatey:
+    needs: [resolve-inputs, package]
+    runs-on: windows-latest
+    permissions: {}
+    if: ${{ vars[needs.resolve-inputs.outputs.skip_var] != 'true' &&
+            (github.event_name == 'repository_dispatch' ||
+             inputs.push_to_chocolatey) }}
+
+    env:
+      NUM_VERSION: ${{ needs.resolve-inputs.outputs.numeric }}
+      PKG_DIR: ${{ needs.resolve-inputs.outputs.pkg_dir }}
+      PKG_NAME: ${{ needs.resolve-inputs.outputs.pkg_name }}
+
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-update
+
+      - name: Choco push
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          choco push "$env:PKG_NAME.$env:NUM_VERSION.nupkg" `
+                     --source https://chocolatey.org `
+                     -k $env:CHOCOLATEY_API_KEY
+
+##############################################################################
+# 4) CREATE PR — commit generated files, push branch, open PR
+##############################################################################
+  create-pr:
+    needs: [resolve-inputs, package]
     runs-on: windows-latest
     permissions:
       contents: write
       id-token: write
 
     env:
-      FULL_TAG:   ${{ inputs.tag || github.event.client_payload.tag }}
-      NUM_VERSION: ${{ needs.version-info.outputs.numeric }}
-      COMPONENT: ${{ inputs.component || github.event.client_payload.component }}
-      WINDOWS_SHA: ${{ inputs.windows_sha || github.event.client_payload.windows_sha }}
+      FULL_TAG: ${{ needs.resolve-inputs.outputs.full_tag }}
+      NUM_VERSION: ${{ needs.resolve-inputs.outputs.numeric }}
+      COMPONENT: ${{ needs.resolve-inputs.outputs.component }}
+      PKG_DIR: ${{ needs.resolve-inputs.outputs.pkg_dir }}
+      PKG_NAME: ${{ needs.resolve-inputs.outputs.pkg_name }}
+      NUSPEC: ${{ needs.resolve-inputs.outputs.nuspec }}
+      EXTRA_PATHS: ${{ needs.resolve-inputs.outputs.extra_paths }}
 
     steps:
-    # ── Validate inputs -----------------------------------------------------
-    - name: Validate inputs
-      shell: bash
-      run: |
-        case "$COMPONENT" in
-          gardenlogin|gardenctl-v2|diki) ;;
-          *)
-            echo "Error: Invalid component '$COMPONENT'"
-            exit 1
-            ;;
-        esac
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
-        if ! echo "$FULL_TAG" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
-          echo "Error: Invalid tag '$FULL_TAG'"
-          exit 1
-        fi
+      - name: Download package artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-update
+          path: ${{ env.PKG_DIR }}
 
-        if ! echo "$WINDOWS_SHA" | grep -qE '^[0-9a-f]{64}$'; then
-          echo "Error: Invalid SHA256 for WINDOWS_SHA"
-          exit 1
-        fi
+      - name: Setup Git Identity
+        uses: gardener/cc-utils/.github/actions/setup-git-identity@v1 # zizmor: ignore[unpinned-uses] -- same-org action; intentionally allowed for now, planned to pin to a version in the future
 
-    # ── Map component ➜ metadata --------------------------------------------
-    - id: meta
-      name: Resolve paths / flags
-      shell: bash
-      run: |
-        case "$COMPONENT" in
-          gardenlogin)
-            echo "SCRIPT=.github/workflows/update-gardenlogin.ps1" >> $GITHUB_OUTPUT
-            echo "NUSPEC=gardenlogin/gardenlogin.nuspec"           >> $GITHUB_OUTPUT
-            echo "PKG_DIR=gardenlogin"                             >> $GITHUB_OUTPUT
-            echo "PKG_NAME=gardenlogin"                            >> $GITHUB_OUTPUT
-            echo "SKIP_VAR=SKIP_CHOCO_PUSH_GARDENLOGIN"            >> $GITHUB_OUTPUT
-            echo "EXTRA_PATHS=gardenlogin/tools/chocolateyinstall.ps1 gardenlogin/tools/chocolateyuninstall.ps1" >> $GITHUB_OUTPUT
-            ;;
-          gardenctl-v2)
-            echo "SCRIPT=.github/workflows/update-gardenctl-v2.ps1" >> $GITHUB_OUTPUT
-            echo "NUSPEC=gardenctl-v2/gardenctl-v2.nuspec"          >> $GITHUB_OUTPUT
-            echo "PKG_DIR=gardenctl-v2"                             >> $GITHUB_OUTPUT
-            echo "PKG_NAME=gardenctl-v2"                            >> $GITHUB_OUTPUT
-            echo "SKIP_VAR=SKIP_CHOCO_PUSH_GARDENCTL_V2"            >> $GITHUB_OUTPUT
-            echo "EXTRA_PATHS=gardenctl-v2/tools/chocolateyinstall.ps1" >> $GITHUB_OUTPUT
-            ;;
-          diki)
-            echo "SCRIPT=.github/workflows/update-diki.ps1"         >> $GITHUB_OUTPUT
-            echo "NUSPEC=diki/diki.nuspec"                          >> $GITHUB_OUTPUT
-            echo "PKG_DIR=diki"                                     >> $GITHUB_OUTPUT
-            echo "PKG_NAME=diki"                                    >> $GITHUB_OUTPUT
-            echo "SKIP_VAR=SKIP_CHOCO_PUSH_DIKI"                    >> $GITHUB_OUTPUT
-            echo "EXTRA_PATHS=diki/tools/chocolateyinstall.ps1"     >> $GITHUB_OUTPUT
-            ;;
-          *) echo "Invalid component: $COMPONENT" && exit 1 ;;
-        esac
+      - name: Get GitHub Token
+        uses: gardener/cc-utils/.github/actions/github-auth@v1 # zizmor: ignore[unpinned-uses] -- same-org action; intentionally allowed for now, planned to pin to a version in the future
+        id: token
+        with:
+          token-server: ${{ vars.FEDERATED_GITHUB_ACCESS_TOKEN_SERVER }}
+          repositories: ${{ github.event.repository.name }}
+          permissions: |
+            pull-requests: write
 
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd   # v6.0.2
-      with:
-        persist-credentials: false
+      - name: Create / update pull request
+        shell: bash
+        env:
+          GIT_PUSH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          BASIC_AUTH="$(printf 'x-access-token:%s' "$GIT_PUSH_TOKEN" | base64 | tr -d '\n')"
+          AUTH_HEADER="AUTHORIZATION: basic $BASIC_AUTH"
 
-    # ── Update nuspec & helper scripts ---------------------------------------
-    - name: Update package source files
-      shell: pwsh
-      env:
-        SCRIPT: ${{ steps.meta.outputs.SCRIPT }}
-      run: |
-        & "$env:SCRIPT" `
-          "$env:FULL_TAG" `
-          "$env:WINDOWS_SHA"
+          echo "::add-mask::$GIT_PUSH_TOKEN"
+          echo "::add-mask::$BASIC_AUTH"
+          echo "::add-mask::$AUTH_HEADER"
 
-    # ── Pack -----------------------------------------------------------------
-    - name: Choco pack
-      shell: pwsh
-      env:
-        NUSPEC: ${{ steps.meta.outputs.NUSPEC }}
-        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
-      run: |
-        choco pack $env:NUSPEC `
-                   --version $env:NUM_VERSION `
-                   -y --outdir $env:PKG_DIR
+          git_with_auth() {
+            GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+            GIT_CONFIG_VALUE_0="$AUTH_HEADER" \
+            git "$@"
+          }
 
-    # ── Push (repo flag & manual flag respected) -----------------------------
-    - name: Choco push
-      if: ${{ vars[steps.meta.outputs.SKIP_VAR] != 'true' &&
-              (github.event_name == 'repository_dispatch' ||
-               inputs.push_to_chocolatey) }}
-      shell: pwsh
-      env:
-        CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
-        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
-        PKG_NAME: ${{ steps.meta.outputs.PKG_NAME }}
-      run: |
-        choco push "$env:PKG_DIR\$env:PKG_NAME.$env:NUM_VERSION.nupkg" `
-                   --source https://chocolatey.org `
-                   -k $env:CHOCOLATEY_API_KEY
+          branch="update_${COMPONENT}_${FULL_TAG}"
+          git switch -c "$branch"
 
-    - name: Push skipped
-      if: ${{ vars[steps.meta.outputs.SKIP_VAR] == 'true' ||
-              (github.event_name == 'workflow_dispatch' && !inputs.push_to_chocolatey) }}
-      run: echo "Chocolatey push skipped."
+          git add "${PKG_DIR}/${PKG_NAME}.${NUM_VERSION}.nupkg"
+          git add "$NUSPEC"
+          for p in $EXTRA_PATHS; do
+            git add "$p"
+          done
 
-    # ── Git identity ---------------------------------------------------------
-    - name: Setup Git Identity
-      uses: gardener/cc-utils/.github/actions/setup-git-identity@v1 # zizmor: ignore[unpinned-uses] -- same-org action; intentionally allowed for now, planned to pin to a version in the future
+          git commit -m "update $COMPONENT to $FULL_TAG" || echo "nothing new"
+          git_with_auth push --force-with-lease -u origin "$branch"
 
-    # ── Pull request ---------------------------------------------------------
-    - name: Install yq
-      run: |
-        choco install yq
-
-    - name: Get GitHub Token
-      uses: gardener/cc-utils/.github/actions/github-auth@v1 # zizmor: ignore[unpinned-uses] -- same-org action; intentionally allowed for now, planned to pin to a version in the future
-      id: token
-      with:
-        token-server: ${{ vars.FEDERATED_GITHUB_ACCESS_TOKEN_SERVER }}
-        repositories: ${{ github.event.repository.name }}
-        permissions: |
-          pull-requests: write
-
-    - name: Create / update pull request
-      shell: bash
-      env:
-        GIT_PUSH_TOKEN: ${{ github.token }}
-        GITHUB_TOKEN: ${{ steps.token.outputs.token }}
-        PKG_DIR: ${{ steps.meta.outputs.PKG_DIR }}
-        PKG_NAME: ${{ steps.meta.outputs.PKG_NAME }}
-        NUSPEC: ${{ steps.meta.outputs.NUSPEC }}
-        EXTRA_PATHS: ${{ steps.meta.outputs.EXTRA_PATHS }}
-        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      run: |
-        BASIC_AUTH="$(printf 'x-access-token:%s' "$GIT_PUSH_TOKEN" | base64 | tr -d '\n')"
-        AUTH_HEADER="AUTHORIZATION: basic $BASIC_AUTH"
-
-        echo "::add-mask::$GIT_PUSH_TOKEN"
-        echo "::add-mask::$BASIC_AUTH"
-        echo "::add-mask::$AUTH_HEADER"
-
-        git_with_auth() {
-          GIT_CONFIG_COUNT=1 \
-          GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
-          GIT_CONFIG_VALUE_0="$AUTH_HEADER" \
-          git "$@"
-        }
-
-        branch="update_${COMPONENT}_${FULL_TAG}"
-        git switch -c "$branch"
-
-        git add "${PKG_DIR}\\${PKG_NAME}.${NUM_VERSION}.nupkg"
-        git add "$NUSPEC"
-        for p in $EXTRA_PATHS;
-          do git add "$p";
-        done
-
-        git commit -m "update $COMPONENT to $FULL_TAG" || echo "nothing new"
-        git_with_auth push --force-with-lease -u origin "$branch"
-
-        gh pr create \
-          --head "$branch" \
-          --base "$DEFAULT_BRANCH" \
-          --title "update $COMPONENT to $FULL_TAG" \
-          --body  "Updates Chocolatey package for **$COMPONENT** ($FULL_TAG)."
+          gh pr create \
+            --head "$branch" \
+            --base "$DEFAULT_BRANCH" \
+            --title "update $COMPONENT to $FULL_TAG" \
+            --body  "Updates Chocolatey package for **$COMPONENT** ($FULL_TAG)."
