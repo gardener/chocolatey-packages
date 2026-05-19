@@ -272,4 +272,4 @@ jobs:
             --head "$branch" \
             --base "$DEFAULT_BRANCH" \
             --title "update $COMPONENT to $FULL_TAG" \
-            --body  "Updates Chocolatey package for **$COMPONENT** ($FULL_TAG)."
+            --body "$(printf 'Updates Chocolatey package for **%s** (%s).\n\n/area ops-productivity\n/kind enhancement' "$COMPONENT" "$FULL_TAG")"
