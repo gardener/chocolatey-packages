@@ -256,7 +256,7 @@ jobs:
             git "$@"
           }
 
-          branch="update_${COMPONENT}_${FULL_TAG}"
+          branch="ci-update-${COMPONENT}-${FULL_TAG}"
           git switch -c "$branch"
 
           git add "${PKG_DIR}/${PKG_NAME}.${NUM_VERSION}.nupkg"
